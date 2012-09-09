@@ -17,13 +17,24 @@ var banks = [
     },
     {
         id: "bcr",
-        name: "Banca Comerciala Romana",
+        name: "BCR",
         url: "http://www.bcr.ro/ro/curs-valutar",
         selector: {
             tableRow: '.fxrates table tr',
             currency: 'td:nth-child(2)',
             buy: 'td:nth-child(3)',
             sell: 'td:nth-child(4)'
+        }        
+    },
+    {
+        id: "brd",
+        name: "BRD",
+        url: "http://www.brd.ro/piete-financiare/piata-valutara-si-monetara/curs-de-schimb/",
+        selector: {
+            tableRow: '#content .description > table tr:nth-child(2) tr',
+            currency: 'td:nth-child(1)',
+            buy: 'td:nth-child(6)',
+            sell: 'td:nth-child(7)'
         }        
     }
 ]
@@ -61,13 +72,13 @@ function extractData(body, config){
               return
           }
           
-          var multiple = BankUtils.getCurencyMultiplier(curr)
-
+          var multiple = getValue($(row), config.selector.currency, BankUtils.getCurencyMultiplier)
+          
           console.log({
               bankId: config.id,
               currency: curr,
-              buy: buy / multiple, 
-              sell: sell / multiple
+              buy: (buy / multiple).toFixed(4), 
+              sell: (sell / multiple).toFixed(4)
           })
       })
     });
