@@ -54,7 +54,9 @@ BankUtils = {
     */    
     getCurrencyCode : function(string){
         // remove non-word characters and digits optionally borderd by whitespace
-        var string = string.replace(/\s*[\*]+\s*/, "").replace(/\s*\d+\s*/,"");
+        var string = string.replace(/\s*[\*]+\s*/, "").replace(/\s*\d+\s*/,""),
+        // replace whitespace in string
+            shortString = string.replace(/\s/,'');
 
         // TODO: remove functions, keep key/value store and test patter in the iteration
     	var _currencyTests = {
@@ -156,9 +158,9 @@ BankUtils = {
     	}
 
     	// run a quick ckech on keys for simple currency codes
-    	if (string.length == 3){
+    	if (shortString.length == 3){
         	for (var i in _currencyTests){
-        	    if (i === string.toLowerCase()){
+        	    if (i === shortString.toLowerCase()){
         	        return i.toUpperCase()
         	    }
         	}	    
