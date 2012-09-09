@@ -117,16 +117,16 @@ var banks = [
     //         buy: 'td:nth-child(8)',
     //         sell: 'td:nth-child(9)'
     //     }        
-    },
+    // },
     {
-        id: "procredit",
-        name: "ProCredit Bank",
-        url: "http://www.procreditbank.ro/ro/curs-valutar",
+        id: "br",
+        name: "Banca Romaneasca",
+        url: "http://www.banca-romaneasca.ro/instrumente-utile/curs-valutar/",
         selector: {
-            tableRow: '.licitatii tr',
+            tableRow: '#exchangeRates tbody tr',
             currency: 'td:nth-child(1)',
-            buy: 'td:nth-child(8)',
-            sell: 'td:nth-child(9)'
+            buy: 'td:nth-child(4)',
+            sell: 'td:nth-child(5)'
         }        
     }
     
