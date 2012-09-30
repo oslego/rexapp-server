@@ -1,0 +1,13 @@
+{
+    "name": "rex-crawler",
+    "version": "0.0.1",
+    "dependencies": {
+        "request": " >= 2.11.4",
+        "jsdom": " >= 0.2.15",
+        "cron":  " >= 1.0.1"
+    },
+    "engines": {
+        "node": "0.8.x",
+        "npm":  "1.1.x"
+    }
+}
