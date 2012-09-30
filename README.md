@@ -1,5 +1,5 @@
-# REXApp Crawler
+# REXApp Server
 
 Run
 =====
-`$ node --debug crawler.js`
+`$ node app.js`
