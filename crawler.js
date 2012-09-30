@@ -1,5 +1,4 @@
 var request = require('request');
-var http = require('http');
 var jsdom = require("jsdom");
 var currency = require("./currency.js").currency;
 var banks = require("./bank-list.js").banks;
