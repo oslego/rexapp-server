@@ -6,24 +6,30 @@ var cronJob = require('cron').CronJob,
     client;
     
 client = new pg.Client(connectionString);
-client.connect();
 
-// client.query({
-//   name: 'insert rate',
-//   text: "INSERT INTO rates(id, curr, buy, sell, date) values($1, $2, $3, $4, $5)",
-//   values: ['George', 70, new Date(1946, 02, 14)]
-// })
+crawler.on('start', function(){
+    client.connect()
+})
 
-// query.on('end', function() { client.end(); });
+crawler.on("result", function(data){
+    client.query({
+      name: 'insert rates',
+      text: "INSERT INTO rates(id, currency, buy, sell, date) values($1, $2, $3, $4, CURRENT_TIMESTAMP)",
+      values: [data.id, data.currency, data.buy, data.sell]
+    })
+})
+
+crawler.on("done", function(data){
+    client.end()
+})
 
 var job = new cronJob({
     // Runs once an hour, between 7 and 18, every day of the week
     cronTime: '0 0 7-18 * * 1-7',
+    // cronTime: '*/10 * * * * 1-7',
     onTick: function() {
-        crawler.crawl()
+        crawler.init()
     },
-  start: true,
-  timeZone: "Europe/Bucharest"
+    start: true,
+    timeZone: "Europe/Bucharest"
 });
-job.start();
-    

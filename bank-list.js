@@ -56,20 +56,6 @@ exports.banks = [
             sell: 'td:nth-child(4) span'
         }        
     },
-    // {
-    //      id: "bt",
-    //      name: "Banca Transilvania",
-    //      // no dedicated URL for rates at the bank office
-    //      url: "http://www.bancatransilvania.ro/",
-    //      selector: {
-    //          // Hardcoded rows so as to not accidentally grab SPOT rates.
-    //          // I hate this hardcoding just as much as you do.
-    //          tableRow: '#rightbox_cursvalutar_container tr:nth-child(8), #rightbox_cursvalutar_container tr:nth-child(9)',
-    //          currency: 'td:nth-child(1)',
-    //          buy: 'td:nth-child(2)',
-    //          sell: 'td:nth-child(3)'
-    //      }        
-    //  },
     {
       id: "volksbank",
       name: "Volksbank",
@@ -124,5 +110,19 @@ exports.banks = [
             buy: 'td:nth-child(4)',
             sell: 'td:nth-child(5)'
         }        
-    }
+    },
+    // {
+    //      id: "bt",
+    //      name: "Banca Transilvania",
+    //      // no dedicated URL for rates at the bank office
+    //      url: "http://www.bancatransilvania.ro/",
+    //      selector: {
+    //          // Hardcoded rows so as to not accidentally grab SPOT rates.
+    //          // I hate this hardcoding just as much as you do.
+    //          tableRow: '#rightbox_cursvalutar_container tr:nth-child(8), #rightbox_cursvalutar_container tr:nth-child(9)',
+    //          currency: 'td:nth-child(1)',
+    //          buy: 'td:nth-child(2)',
+    //          sell: 'td:nth-child(3)'
+    //      }        
+    //  },
 ]
