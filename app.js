@@ -100,8 +100,7 @@ function getRates(req, res){
 
 job = new cronJob({
     // Runs once an hour, between 7 and 18, every day of the week
-    // cronTime: '0 0 7-18 * * 0-6',
-    cronTime: '*/10 * * * * 0-6',
+    cronTime: '0 0 7-18 * * 0-6',
     onTick: function() {
         crawler.init()
     },
