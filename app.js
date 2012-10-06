@@ -1,37 +1,101 @@
-var pg = require('pg').native,
-    connectionString = process.env.DATABASE_URL || 'postgres://localhost:5432/rexdev',
+var express = require('express'),
+    app = express(),
     port = process.env.PORT || 3000,
     crawler = require('./crawler.js'),
     cronJob = require('cron').CronJob,
-    client;
+    fs = require('fs'),
+    filename = "rates.json",
+    cache = null,
+    job,
+    results = [];
     
-client = new pg.Client(connectionString);
-
 crawler.on('start', function(){
-    client.connect()
+    results = []
 })
 
 crawler.on("result", function(data){
-    client.query({
-      name: 'insert rates',
-      text: "INSERT INTO rates(id, currency, buy, sell, date) values($1, $2, $3, $4, CURRENT_TIMESTAMP)",
-      values: [data.id, data.currency, data.buy, data.sell]
-    })
+    results.push(data)
 })
 
 crawler.on("done", function(data){
-    client.on('drain', client.end.bind(client)); //disconnect client when all queries are finished
+    cache = buildResponse(results)
+    fs.writeFile(filename, JSON.stringify(cache), function(err){
+        if (err) throw err;
+        console.log("write cache", cache.updated_on)
+    })
 })
 
-crawler.init()
+function buildResponse(rates){
+    var resp = {
+        updated_on: new Date,
+        rates: {},
+        sources: {}
+    }
 
-var job = new cronJob({
+    rates.forEach(function(rate, index){
+        var rates = resp.rates,
+            control = getControl(rate)
+
+        if (!rates[rate.currency]){
+            rates[rate.currency] = []
+        }
+
+        rate.updated_on = control ? getUpdatedOn(rate, control) : +new Date
+
+        rates[rate.currency].push(rate)
+    }) 
+    
+    return resp
+}
+
+function getControl(rate){
+    if (!cache || !cache.rates || !cache.rates[rate.currency]){
+        return
+    }
+    
+    return cache.rates[rate.currency].filter(function(item){
+        return item.id === rate.id
+    }).pop()
+}
+
+function getUpdatedOn(rate, control){
+    return ( equals(rate.sell, control.sell) && equals(rate.buy, control.buy) ) 
+        ? control.updated_on
+        : +new Date
+}
+
+function equals(a, b){
+    return a === b
+}
+
+function refresh(){
+    fs.readFile(filename, function (err, data) {
+        if (err) return;
+        cache = JSON.parse(data)
+        console.log("new cache: ", cache.updated_on)
+    })
+}
+
+app.get('/', function(req, res) {
+    res.send("No API here")
+});
+
+app.get('/rates', function(req, res) {
+    res.jsonp(cache);
+});
+
+job = new cronJob({
     // Runs once an hour, between 7 and 18, every day of the week
-    // cronTime: '0 0 7-18 * * 1-7',
-    cronTime: '*/10 * * * * 1-7',
+    // cronTime: '0 0 7-18 * * 0-6',
+    cronTime: '*/10 * * * * 0-6',
     onTick: function() {
-        crawler.init()
+        // crawler.init()
     },
     start: true,
     timeZone: "Europe/Bucharest"
+});
+
+app.listen(port, function() {
+    refresh()
+    console.log('Listening on:', port);
 });
