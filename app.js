@@ -28,8 +28,7 @@ crawler.on("done", function(data){
 function buildResponse(rates){
     var resp = {
         updated_on: new Date,
-        rates: {},
-        sources: {}
+        rates: {}
     }
 
     rates.forEach(function(rate, index){
@@ -40,7 +39,7 @@ function buildResponse(rates){
             rates[rate.currency] = []
         }
 
-        rate.updated_on = control ? getUpdatedOn(rate, control) : +new Date
+        rate.updated_on = control ? getUpdatedOn(rate, control) : new Date
 
         rates[rate.currency].push(rate)
     }) 
@@ -68,34 +67,53 @@ function equals(a, b){
     return a === b
 }
 
-function refresh(){
-    fs.readFile(filename, function (err, data) {
-        if (err) return;
-        cache = JSON.parse(data)
-        console.log("new cache: ", cache.updated_on)
-    })
-}
-
 app.get('/', function(req, res) {
     res.send("No API here")
 });
 
-app.get('/rates', function(req, res) {
-    res.jsonp(cache);
-});
+app.get('/rates', getRates);
+app.get('/rates/:currency', getRates);
+
+function getRates(req, res){
+    var curr = req.params.currency,
+        data = {
+            updated_on: cache.updated_on,
+            sources: {}
+        }
+    
+    if (curr){
+        curr = curr.toUpperCase()
+        if (cache.rates[curr]){
+            data.rates = cache.rates[curr]
+        }
+        else{
+            res.send('Invalid currency')
+        }
+    }
+    else{
+        // drown them in data!
+        data.rates = cache.rates
+    }
+    
+    res.jsonp(data);
+}
 
 job = new cronJob({
     // Runs once an hour, between 7 and 18, every day of the week
     // cronTime: '0 0 7-18 * * 0-6',
     cronTime: '*/10 * * * * 0-6',
     onTick: function() {
-        // crawler.init()
+        crawler.init()
     },
     start: true,
     timeZone: "Europe/Bucharest"
 });
 
 app.listen(port, function() {
-    refresh()
+    fs.readFile(filename, function (err, data) {
+        if (err) return;
+        cache = JSON.parse(data)
+        console.log("new cache: ", cache.updated_on)
+    })
     console.log('Listening on:', port);
 });
