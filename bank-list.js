@@ -83,6 +83,7 @@ exports.banks = [
         name: "Unicredit Tiriac Bank",
         url: "http://www.unicredit-tiriac.ro/exchp",
         selector: {
+            // TODO test jquery and sibling selectors
             tableRow: '#content table tr:nth-child(15) ~ tr',
             currency: 'td:nth-child(1)',
             buy: 'td:nth-child(2)',
