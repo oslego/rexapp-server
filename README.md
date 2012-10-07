@@ -9,7 +9,20 @@ Run
 API
 =====
 
-All queries prefixed with the URL where the server is running.
+The REX App API returns currency exchange rates available from banks in Romania. All rates are in RON, the national Romanian currency.
+
+All endpoints in this document should be prefixed with the URL where the server is running, for example `http://localhost:3000`. For brevity, this URL was omitted from the examples below.
+
+Response format
+----
+
+All responses come in JSON format.
+
+Get JSONP for easy cross-domain calls by appending `?callback={functionName}` to each call, where {functionName} is the name of your handler function.
+
+
+Rates API
+----
 
 `GET /rates`
 
