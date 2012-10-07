@@ -5,10 +5,26 @@ var express = require('express'),
     cronJob = require('cron').CronJob,
     fs = require('fs'),
     filename = "rates.json",
-    cache = null,
+    _cache = null,
     job,
     results = [];
+
+// all environments, using env.NODE_ENV to match
+app.configure(function(){
+    app.set('timezone', 'Europe/Bucharest')
+})
     
+// development only
+app.configure('development', function(){
+    app.set('crontime', '*/5 * * * * 0-6');
+})
+
+// production only
+app.configure('production', function(){
+    // Runs once every 30 minutes, between 7AM and 6PM, every day of the week
+    app.set('crontime', '0 */30 7-18 * * 0-6');
+})
+
 crawler.on('start', function(){
     results = []
 })
@@ -18,12 +34,21 @@ crawler.on("result", function(data){
 })
 
 crawler.on("done", function(data){
-    cache = buildResponse(results)
-    fs.writeFile(filename, JSON.stringify(cache), function(err){
-        if (err) throw err;
-        console.log("write cache", cache.updated_on)
-    })
+    setCache(buildResponse(results))
 })
+
+function setCache(data){
+    _cache = data
+    
+    fs.writeFile(filename, JSON.stringify(data), function(err){
+        if (err) throw err;
+        console.log("write cache", _cache.updated_on)
+    })
+}
+
+function getCache(){
+    return _cache
+}
 
 function buildResponse(rates){
     var resp = {
@@ -48,6 +73,7 @@ function buildResponse(rates){
 }
 
 function getControl(rate){
+    var cache = getCache()
     if (!cache || !cache.rates || !cache.rates[rate.currency]){
         return
     }
@@ -58,13 +84,13 @@ function getControl(rate){
 }
 
 function getUpdatedOn(rate, control){
+    function equals(a, b){
+        return a === b
+    }
+    
     return ( equals(rate.sell, control.sell) && equals(rate.buy, control.buy) ) 
         ? control.updated_on
         : +new Date
-}
-
-function equals(a, b){
-    return a === b
 }
 
 app.get('/', function(req, res) {
@@ -75,33 +101,43 @@ app.get('/rates', getRates);
 app.get('/rates/:currency', getRates);
 
 function getRates(req, res){
-    var curr = req.params.currency,
+    var cache = getCache(),
+        curr = req.params.currency,
         data = {
-            updated_on: cache.updated_on,
-            sources: {}
-        }
-    
-    if (curr){
-        curr = curr.toUpperCase()
-        if (cache.rates[curr]){
-            data.rates = cache.rates[curr]
+            status: "ok"
+        };
+        
+    if (cache){
+        data.updated_on = cache.updated_on
+
+        if (curr){
+            curr = curr.toUpperCase()
+            if (cache.rates[curr]){
+                data.rates = cache.rates[curr]
+            }
+            else{
+                data.status = "error",
+                data.message = "Invalid currency code."
+                delete data.updated_on
+            }
         }
         else{
-            res.send('Invalid currency')
+            // drown them in data!
+            data.rates = cache.rates
         }
     }
     else{
-        // drown them in data!
-        data.rates = cache.rates
+        data.status = "warning",
+        data.message = "Update pending. Come back later"
     }
     
     res.jsonp(data);
 }
 
 job = new cronJob({
-    // Runs once an hour, between 7 and 18, every day of the week
-    cronTime: '0 0 7-18 * * 0-6',
+    cronTime: app.get('crontime'),
     onTick: function() {
+        console.log('tick')
         crawler.init()
     },
     start: true,
@@ -110,9 +146,13 @@ job = new cronJob({
 
 app.listen(port, function() {
     fs.readFile(filename, function (err, data) {
-        if (err) return;
-        cache = JSON.parse(data)
-        console.log("new cache: ", cache.updated_on)
+        if (err){
+            crawler.init()
+        }
+        else{
+            setCache(JSON.parse(data))
+            console.log("new cache: ", getCache().updated_on)
+        }
     })
     console.log('Listening on:', port);
 });
