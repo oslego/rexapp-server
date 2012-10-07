@@ -1,4 +1,4 @@
-/* Currenty util functions */
+/* Currency util functions */
 exports.currency = {
     getValue : function(string){
         if (!string || typeof string !== "string"){
