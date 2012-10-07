@@ -14,7 +14,7 @@ exports.currency = {
     },
 
     /*
-    Takes a natural language string and tries to match a valid currency code.
+    Takes a Romanian natural language string and tries to match a valid currency code.
     @param {String} string 
     	natural language string to be decoded.
 
