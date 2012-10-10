@@ -2,18 +2,15 @@ var express = require('express'),
     app = express(),
     port = process.env.PORT || 3000,
     crawler = require('./crawler.js'),
+    rateStore = require('./ratestore.js').RateStore,
     cronJob = require('cron').CronJob,
-    fs = require('fs'),
-    filename = "rates.json",
-    _cache = null,
-    job,
-    results = [];
+    job;
 
 // all environments, using env.NODE_ENV to match
 app.configure(function(){
     app.set('timezone', 'Europe/Bucharest')
 })
-    
+
 // development only
 app.configure('development', function(){
     app.set('crontime', '*/5 * * * * 0-6');
@@ -26,72 +23,16 @@ app.configure('production', function(){
 })
 
 crawler.on('start', function(){
-    results = []
+    // results = []
 })
 
 crawler.on("result", function(data){
-    results.push(data)
+    rateStore.add(data)
 })
 
 crawler.on("done", function(data){
-    setCache(buildResponse(results))
+    rateStore.aggregate()
 })
-
-function setCache(data){
-    _cache = data
-    
-    fs.writeFile(filename, JSON.stringify(data), function(err){
-        if (err) throw err;
-        console.log("write cache", _cache.updated_on)
-    })
-}
-
-function getCache(){
-    return _cache
-}
-
-function buildResponse(rates){
-    var resp = {
-        updated_on: new Date,
-        rates: {}
-    }
-
-    rates.forEach(function(rate, index){
-        var rates = resp.rates,
-            control = getControl(rate)
-
-        if (!rates[rate.currency]){
-            rates[rate.currency] = []
-        }
-
-        rate.updated_on = control ? getUpdatedOn(rate, control) : new Date
-
-        rates[rate.currency].push(rate)
-    }) 
-    
-    return resp
-}
-
-function getControl(rate){
-    var cache = getCache()
-    if (!cache || !cache.rates || !cache.rates[rate.currency]){
-        return
-    }
-    
-    return cache.rates[rate.currency].filter(function(item){
-        return item.id === rate.id
-    }).pop()
-}
-
-function getUpdatedOn(rate, control){
-    function equals(a, b){
-        return a === b
-    }
-    
-    return ( equals(rate.sell, control.sell) && equals(rate.buy, control.buy) ) 
-        ? control.updated_on
-        : +new Date
-}
 
 app.get('/', function(req, res) {
     res.send("No API here")
@@ -101,37 +42,39 @@ app.get('/rates', getRates);
 app.get('/rates/:currency', getRates);
 
 function getRates(req, res){
-    var cache = getCache(),
-        curr = req.params.currency,
-        data = {
+    var cache = rateStore.getAll(),
+        curr = req.params.currency ? req.params.currency.toUpperCase() : undefined,
+        rates,
+        response = {
             status: "ok"
         };
-        
+
     if (cache){
-        data.updated_on = cache.updated_on
+        response.updated_on = cache.updated_on
 
         if (curr){
-            curr = curr.toUpperCase()
-            if (cache.rates[curr]){
-                data.rates = cache.rates[curr]
+            rates = rateStore.get(curr)
+
+            if (rates){
+                response.rates = rates
             }
             else{
-                data.status = "error",
-                data.message = "Invalid currency code."
-                delete data.updated_on
+                response.status = "error",
+                response.message = "Invalid currency code."
+                delete response.updated_on
             }
         }
         else{
             // drown them in data!
-            data.rates = cache.rates
+            response.rates = cache.rates
         }
     }
     else{
-        data.status = "warning",
-        data.message = "Update pending. Come back later"
+        response.status = "warning",
+        response.message = "Update pending. Come back later"
     }
     
-    res.jsonp(data);
+    res.jsonp(response);
 }
 
 job = new cronJob({
@@ -145,14 +88,13 @@ job = new cronJob({
 });
 
 app.listen(port, function() {
-    fs.readFile(filename, function (err, data) {
-        if (err){
+    
+    rateStore.init(function(store){
+        if (!store.get('EUR')){
+            // cold start, need data
             crawler.init()
         }
-        else{
-            setCache(JSON.parse(data))
-            console.log("new cache: ", getCache().updated_on)
-        }
     })
+
     console.log('Listening on:', port);
 });
