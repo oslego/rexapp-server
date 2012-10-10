@@ -5,5 +5,5 @@ var pg = require('pg').native,
 
 client = new pg.Client(connectionString);
 client.connect();
-query = client.query('CREATE TABLE rates (updated_on date, data text)');
+query = client.query('CREATE TABLE rates (updated_on date UNIQUE, data text)');
 query.on('end', function() { client.end(); });
