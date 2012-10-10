@@ -11,11 +11,11 @@ function getData(callback){
         client = new pg.Client(connectionString),
         query;
 
-    query = client.query('SELECT data FROM rates WHERE updated_on = $1', [updated_on])
-    query.on('row', function(result){
-        callback.call(null, result.data)
+    query = client.query('SELECT data FROM rates WHERE updated_on = $1', [updated_on], function(err, result){
+        callback.call(null, result)
+        console.log("result!", result)
     })
-      
+    
     client.on('drain', function(){
         client.end()
     })
@@ -113,8 +113,10 @@ function RateStore(){
         },
 
         init: function(callback){
-            getData(function(data){
-                _cache = JSON.parse(data)
+            getData(function(result){
+                if (result.data){
+                    _cache = JSON.parse(result.data)
+                }
                 callback.call(null, this)
             }.bind(this))
             

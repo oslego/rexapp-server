@@ -14,6 +14,7 @@ app.configure(function(){
 // development only
 app.configure('development', function(){
     app.set('crontime', '*/5 * * * * 0-6');
+    
 })
 
 // production only
