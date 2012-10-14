@@ -2,13 +2,15 @@ var express = require('express'),
     app = express(),
     port = process.env.PORT || 3000,
     rateStore = require('./ratestore.js').RateStore,
-    cache = null;
+    banks = require("./lib/bank-list.js").banks,
+    cache = {};
 
 app.use(express.compress())
 app.get('/', function(req, res) {
     res.send("No API here")
 });
 
+app.get('/v1/banks', getBanks);
 app.get('/v1/rates', getRates);
 app.get('/v1/rates/:currency', getRates);
 
@@ -34,6 +36,29 @@ function getRates(req, res){
     }
 
     curr ? rateStore.get(curr, output) : rateStore.getAll(output)
+}
+
+function getBanks(res, res){
+    var response = {}
+
+    if (!cache['banks']){
+        cache['banks'] = {}
+
+        banks.slice(0).forEach(function(bank){
+            var id = bank.id
+
+            // discard crawling details and id, which is used as key
+            delete bank.selector
+            delete bank.id
+
+            cache['banks'][id] = bank
+        })
+    }
+
+    response.status = "ok"
+    response.banks = cache['banks']
+
+    res.jsonp(response)
 }
 
 app.listen(port, function() {
