@@ -4,12 +4,13 @@ var express = require('express'),
     rateStore = require('./ratestore.js').RateStore,
     cache = null;
 
+app.use(express.compress())
 app.get('/', function(req, res) {
     res.send("No API here")
 });
 
-app.get('/rates', getRates);
-app.get('/rates/:currency', getRates);
+app.get('/v1/rates', getRates);
+app.get('/v1/rates/:currency', getRates);
 
 function getRates(req, res){
     var curr = req.params.currency ? req.params.currency.toUpperCase() : undefined,
