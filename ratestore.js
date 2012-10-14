@@ -70,6 +70,13 @@ function RateStore(){
             : +new Date
     }
     
+    // setup
+    getData(function(data){
+        if (data){
+            _cache = JSON.parse(data)
+        }
+    })
+    
     return {
         add: function(rateData){
             _pool.push(rateData)
@@ -131,17 +138,6 @@ function RateStore(){
             _cache = obj
             _pool = []
             this.persist()
-            
-            return this
-        },
-
-        init: function(callback){
-            getData(function(result){
-                if (result.data){
-                    _cache = JSON.parse(result.data)
-                }
-                callback.call(null, this)
-            }.bind(this))
             
             return this
         },
