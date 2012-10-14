@@ -10,8 +10,8 @@ var port = process.env.PORT || 3000,
 
 switch(environment){
     case 'development':
-        // Runs every 5 seconds, everyday
-        config.cronTime = '*/5 * * * * 0-6'
+        // Runs every 30 seconds, everyday
+        config.cronTime = '*/30 * * * * 0-6'
     break
     
     case 'production':
