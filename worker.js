@@ -1,7 +1,7 @@
 var port = process.env.PORT || 3000,
     environment = process.env.NODE_ENV || 'development',
-    crawler = require('lib/crawler.js'),
-    rateStore = require('ratestore.js').RateStore,
+    crawler = require('./lib/crawler.js'),
+    rateStore = require('./ratestore.js').RateStore,
     cronJob = require('cron').CronJob,
     job,
     config = {

@@ -1,7 +1,7 @@
 var express = require('express'),
     app = express(),
     port = process.env.PORT || 3000,
-    rateStore = require('ratestore.js').RateStore,
+    rateStore = require('./ratestore.js').RateStore,
     cache = null;
 
 app.use(express.compress())
