@@ -3,12 +3,16 @@ var express = require('express'),
     port = process.env.PORT || 3000,
     rateStore = require('./ratestore.js').RateStore,
     banks = require("./lib/bank-list.js").banks,
+    worker = require("./worker.js"),
     cache = {};
 
 app.use(express.compress())
 app.get('/', function(req, res) {
     res.send("No API here")
 });
+
+// endpoint to ping to prevent Heroku from idling
+app.get('/ping', handlePing)
 
 app.get('/v1/banks', getBanks);
 app.get('/v1/rates', getRates);
@@ -38,7 +42,7 @@ function getRates(req, res){
     curr ? rateStore.get(curr, output) : rateStore.getAll(output)
 }
 
-function getBanks(res, res){
+function getBanks(req, res){
     var response = {}
 
     if (!cache['banks']){
@@ -58,6 +62,13 @@ function getBanks(res, res){
     response.status = "ok"
     response.banks = cache['banks']
 
+    res.jsonp(response)
+}
+
+/* Heroku idles any web process with inactivity for 1 hour
+Ping is called regularly by a remote worker to keep the web process alive */
+function handlePing(req, res){
+    var response = { ping: new Date } 
     res.jsonp(response)
 }
 
