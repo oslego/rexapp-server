@@ -3,17 +3,17 @@ var express = require('express'),
     port = process.env.PORT || 3000,
     rateStore = require('./ratestore.js').RateStore,
     banks = require("./lib/bank-list.js").banks,
-    worker = require("./worker.js"),
     cache = {};
+    
+// loading worker in the API's web process because Heroku wants money for another dyno to run the worker
+require("./worker.js"),
 
 app.use(express.compress())
-app.get('/', function(req, res) {
-    res.send("No API here")
-});
 
-// endpoint to ping to prevent Heroku from idling
+app.get('/', handleInvalidEndpoint);
+
+// ping here more than once an hour to prevent Heroku from idling the web process
 app.get('/ping', handlePing)
-
 app.get('/v1/banks', getBanks);
 app.get('/v1/rates', getRates);
 app.get('/v1/rates/:currency', getRates);
@@ -70,6 +70,11 @@ Ping is called regularly by a remote worker to keep the web process alive */
 function handlePing(req, res){
     var response = { ping: new Date } 
     res.jsonp(response)
+}
+
+function handleInvalidEndpoint(req, res){
+    // TODO: investigate API discoverability
+    res.send("No API here")
 }
 
 app.listen(port, function() {
