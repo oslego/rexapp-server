@@ -45,3 +45,6 @@ job = new cronJob({
 // grab fresh data on process start
 job.start()
 
+module.exports.run = function(){
+    crawler.init()
+}

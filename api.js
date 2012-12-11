@@ -4,9 +4,9 @@ var express = require('express'),
     rateStore = require('./ratestore.js').RateStore,
     banks = require("./lib/bank-list.js").banks,
     cache = {};
-    
-// loading worker in the API's web process because Heroku wants money for another dyno to run the worker
-require("./worker.js"),
+
+// loading crawler worker in the API's web process because Heroku wants money for another dyno to run the worker
+var crawler = require("./worker.js")
 
 app.use(express.compress())
 
@@ -14,9 +14,12 @@ app.get('/', handleInvalidEndpoint);
 
 // ping here more than once an hour to prevent Heroku from idling the web process
 app.get('/ping', handlePing)
-app.get('/v1/banks', getBanks);
-app.get('/v1/rates', getRates);
-app.get('/v1/rates/:currency', getRates);
+app.get('/v1/banks', getBanks)
+app.get('/v1/rates', getRates)
+app.get('/v1/rates/:currency', getRates)
+
+// manual run for crawler
+app.get('/crawl', runCrawler)
 
 function getRates(req, res){
     var curr = req.params.currency ? req.params.currency.toUpperCase() : undefined,
@@ -75,6 +78,11 @@ function handlePing(req, res){
 function handleInvalidEndpoint(req, res){
     // TODO: investigate API discoverability
     res.send("No API here")
+}
+
+function runCrawler(req, res){
+    crawler.run()
+    res.send("Crawl sheduled at "+ new Date)
 }
 
 app.listen(port, function() {
