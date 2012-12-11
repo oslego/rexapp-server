@@ -42,9 +42,8 @@ job = new cronJob({
     }
 });
 
-// grab fresh data on process start
+// start scheduling
 job.start()
 
-module.exports.run = function(){
-    crawler.init()
-}
+// grab fresh data on process start
+crawler.init()
