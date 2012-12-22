@@ -3,8 +3,9 @@ var express = require('express'),
     port = process.env.PORT || 3000,
     rateStore = require('./ratestore.js').RateStore,
     banks = require("./lib/bank-list.js").banks,
+    currencyMap = require("./lib/currency.js").currency.map,
     cache = {};
-
+    
 // loading crawler worker in the API's web process because Heroku wants money for another dyno to run the worker
 require("./worker.js")
 
@@ -15,6 +16,7 @@ app.get('/', handleInvalidEndpoint);
 // ping here more than once an hour to prevent Heroku from idling the web process
 app.get('/ping', handlePing)
 app.get('/v1/banks', getBanks)
+app.get('/v1/currencies', getCurrencies)
 app.get('/v1/rates', getRates)
 app.get('/v1/rates/:currency', getRates)
 
@@ -43,25 +45,18 @@ function getRates(req, res){
 }
 
 function getBanks(req, res){
-    var response = {}
-
-    if (!cache['banks']){
-        cache['banks'] = {}
-
-        banks.slice(0).forEach(function(bank){
-            var id = bank.id
-
-            // discard crawling details and id, which is used as key
-            delete bank.selector
-            delete bank.id
-
-            cache['banks'][id] = bank
-        })
+    var response = {
+        status: "ok",
+        banks: cache['banks']
     }
+    res.jsonp(response)
+}
 
-    response.status = "ok"
-    response.banks = cache['banks']
-
+function getCurrencies(req, res){
+    var response = {
+        status: "ok",
+        currencies: cache['currencies']
+    }
     res.jsonp(response)
 }
 
@@ -76,6 +71,36 @@ function handleInvalidEndpoint(req, res){
     // TODO: investigate API discoverability
     res.send("No API here")
 }
+
+// init
+(function(){
+    // prepare banks API response object data
+    cache['banks'] = {}
+    banks.forEach(function(bank){
+        var id = bank.id
+        
+        for (var prop in bank){
+            cache['banks']
+        }
+    
+        // discard crawling details and id, which is used as key
+        delete bank.selector
+        delete bank.id
+        cache['banks'][id] = bank
+    })
+    
+    // prepare currencies API response object data
+    // cache['currencies'] = currencyMap
+    // for (var key in currencyMap){
+    //     for (var prop in currencyMap[key]){
+    //         cache['currencies'][key][prop] = currencyMap[key][prop]
+    //     }
+    //     // cache['currencies'][key] = currencyMap[key]
+    // 
+    //     // discard matching pattern
+    //     // delete cache['currencies'][key].pattern
+    // }
+})()
 
 app.listen(port, function() {
     console.log('API listening on:', port);

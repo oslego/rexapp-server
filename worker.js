@@ -26,6 +26,7 @@ crawler.on('start', function(){
 
 crawler.on("result", function(data){
     rateStore.add(data)
+    console.log(data)
 })
 
 crawler.on("done", function(data){

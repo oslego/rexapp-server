@@ -6,8 +6,9 @@
         "request": "2.11.x",
         "jsdom": "0.2.x",
         "pg": "0.8.x",
-        "cron":  "1.x.x",
-        "time":  "0.8.x"
+        "cron": "1.x.x",
+        "time": "0.8.x",
+        "underscore": "1.4.x"
     },
     "engines": {
         "node": "0.8.x",
