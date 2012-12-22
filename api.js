@@ -1,4 +1,5 @@
 var express = require('express'),
+    _ = require('underscore'),
     app = express(),
     port = process.env.PORT || 3000,
     rateStore = require('./ratestore.js').RateStore,
@@ -15,8 +16,9 @@ app.get('/', handleInvalidEndpoint);
 
 // ping here more than once an hour to prevent Heroku from idling the web process
 app.get('/ping', handlePing)
-app.get('/v1/banks', getBanks)
-app.get('/v1/currencies', getCurrencies)
+app.get('/v1/banks', getResponse('banks'))
+app.get('/v1/currencies', getResponse('currencies'))
+app.get('/v1/config', getResponse('config'))
 app.get('/v1/rates', getRates)
 app.get('/v1/rates/:currency', getRates)
 
@@ -44,20 +46,23 @@ function getRates(req, res){
     curr ? rateStore.get(curr, output) : rateStore.getAll(output)
 }
 
-function getBanks(req, res){
-    var response = {
-        status: "ok",
-        banks: cache['banks']
+/* Return a response from the cache */
+function getResponse(key){
+    return function(req, res){
+        
+        var data = cache[key],
+            response = {}
+        
+        if (data){
+            response.status = "ok"
+            response[key] = data
+        }
+        else{
+            response.status = "error"
+        }
+        
+        res.jsonp(response)
     }
-    res.jsonp(response)
-}
-
-function getCurrencies(req, res){
-    var response = {
-        status: "ok",
-        currencies: cache['currencies']
-    }
-    res.jsonp(response)
 }
 
 /* Heroku idles any web process with inactivity for 1 hour
@@ -76,30 +81,25 @@ function handleInvalidEndpoint(req, res){
 (function(){
     // prepare banks API response object data
     cache['banks'] = {}
-    banks.forEach(function(bank){
-        var id = bank.id
-        
-        for (var prop in bank){
-            cache['banks']
-        }
-    
-        // discard crawling details and id, which is used as key
-        delete bank.selector
-        delete bank.id
-        cache['banks'][id] = bank
+
+    _.each(banks, function(bank){
+        // copy object without keys
+        cache['banks'][bank.id] = _.omit(bank, ['selector', 'id'])
     })
-    
+
     // prepare currencies API response object data
-    // cache['currencies'] = currencyMap
-    // for (var key in currencyMap){
-    //     for (var prop in currencyMap[key]){
-    //         cache['currencies'][key][prop] = currencyMap[key][prop]
-    //     }
-    //     // cache['currencies'][key] = currencyMap[key]
-    // 
-    //     // discard matching pattern
-    //     // delete cache['currencies'][key].pattern
-    // }
+    cache['currencies'] = {}
+
+    _.each(currencyMap, function(currency){
+        cache['currencies'][currency.code] = _.omit(currency, ['pattern'])
+    })
+
+    // convenience API for clients
+    cache['config'] = {
+        "banks": cache['banks'],
+        "currencies": cache['currencies']
+    }
+    
 })()
 
 app.listen(port, function() {
