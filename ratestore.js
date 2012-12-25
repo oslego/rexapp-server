@@ -14,14 +14,18 @@ function getData(callback){
     query = client.query('SELECT data FROM rates WHERE updated_on = $1', [updated_on])
     
     query.on('row', function(result){
-        callback.call(null, result.data)
+        callback.call(null, JSON.parse(result.data))
     })
     
     client.on('drain', function(){
         client.end()
     })
     
-    client.connect()
+    client.connect(function(err){
+        if (err){
+            console.error("DB connection fail", err)
+        }
+    })
 }
 
 function storeData(data, callback){
@@ -46,15 +50,16 @@ function storeData(data, callback){
 }
 
 function RateStore(){
-    var _cache = null,
+    var _self = this,
+        _expires = 1000 * 60, // cache expiration in milliseconds
         _pool = [] // rate data before aggregating and storing into the db
-    
+        
     function _getControl(rate){
-        if (!_cache || !_cache.rates || !_cache.rates[rate.currency]){
+        if (!_self.cache || !_self.cache.rates || !_self.cache.rates[rate.currency]){
             return
         }
 
-        return _cache.rates[rate.currency].filter(function(item){
+        return _self.cache.rates[rate.currency].filter(function(item){
             return item.id === rate.id
         }).pop()
     }
@@ -70,14 +75,26 @@ function RateStore(){
             : +new Date
     }
     
-    // setup
+    function setCache(data){
+        _self.cache = data 
+        
+        // flush the cache after a set time
+        setTimeout(function(){
+            _self.cache = null
+        }, _expires)
+    }
+    
+    // init
     getData(function(data){
         if (data){
-            _cache = JSON.parse(data)
+            setCache(data)
         }
     })
     
     return {
+        // cache of DB results
+        cache: null,
+        
         add: function(rateData){
             _pool.push(rateData)
             return this
@@ -108,11 +125,19 @@ function RateStore(){
                 return this
             }
             
-            getData(function(data){
-                if (data){
-                    callback.call(null, JSON.parse(data))
-                }
-            })
+            // Use cache if available to reduce load on DB
+            if (_self.cache){
+                callback.call(null, _self.cache)
+            }
+            else{
+                // Hit the DB
+                getData(function(data){
+                    if (data){
+                        setCache(data)
+                        callback.call(null, data)
+                    }
+                })
+            } 
             
             return this
         },
@@ -122,7 +147,7 @@ function RateStore(){
                 updated_on: new Date,
                 rates: {}
             }
-
+            
             _pool.forEach(function(rate, index){
                 var control = _getControl(rate)
 
@@ -135,7 +160,7 @@ function RateStore(){
                 obj.rates[rate.currency].push(rate)
             })
             
-            _cache = obj
+            _self.cache = obj
             _pool = []
             this.persist()
             
@@ -143,7 +168,7 @@ function RateStore(){
         },
 
         persist: function(){
-            storeData(JSON.stringify(_cache))
+            storeData(JSON.stringify(_self.cache))
             return this
         }
     }

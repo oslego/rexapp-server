@@ -42,7 +42,7 @@ function getRates(req, res){
 
         res.jsonp(response)
     }
-
+    
     curr ? rateStore.get(curr, output) : rateStore.getAll(output)
 }
 
