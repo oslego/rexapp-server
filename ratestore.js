@@ -5,16 +5,29 @@ var pg = require('pg').native,
         return typeof fn === "function"
     }
 
-function getData(callback){
-    var updated_on = new Date,
+function getData(callback, date){
+    var updated_on = date || new Date,
         callback = isFunction(callback) ? callback : noop,
         client = new pg.Client(connectionString),
+        numRows = 0,
         query;
-
+        
     query = client.query('SELECT data FROM rates WHERE updated_on = $1', [updated_on])
     
     query.on('row', function(result){
+        numRows++;
         callback.call(null, JSON.parse(result.data))
+    })
+    
+    query.on('end', function(err){
+        // if no rows return it means we don't have results for the specified date
+        if (numRows == 0){
+            // get the day before
+            updated_on.setDate(updated_on.getDate() - 1)
+
+            // attempt to get the day before's data
+            getData.call(this, callback, updated_on)
+        }
     })
     
     client.on('drain', function(){
