@@ -36,8 +36,11 @@ function getRates(req, res){
 
     function output(store){
         if (store){
-            response.updated_on = store.updated_on
-            response.rates = store.rates
+            response.updated_on = store.updated_on;
+            response.rates = store.rates;
+            response.rates.forEach(function(rate){
+              rate.bank = cache['banks'][rate.id]
+            })
         }
         else{
             response.status = "error",
