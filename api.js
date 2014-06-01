@@ -6,11 +6,17 @@ var express = require('express'),
     banks = require("./lib/bank-list.js").banks,
     currencyMap = require("./lib/currency.js").currency.map,
     cache = {};
-    
+
 // loading crawler worker in the API's web process because Heroku wants money for another dyno to run the worker
 require("./worker.js")
 
 app.use(express.compress())
+
+app.all('*', function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "X-Requested-With");
+  next();
+});
 
 app.get('/', handleInvalidEndpoint);
 
@@ -27,7 +33,7 @@ function getRates(req, res){
         response = {
             status: "ok"
         }
-    
+
     function output(store){
         if (store){
             response.updated_on = store.updated_on
@@ -42,17 +48,17 @@ function getRates(req, res){
 
         res.jsonp(response)
     }
-    
+
     curr ? rateStore.get(curr, output) : rateStore.getAll(output)
 }
 
 /* Return a response from the cache */
 function getResponse(key){
     return function(req, res){
-        
+
         var data = cache[key],
             response = {}
-        
+
         if (data){
             response.status = "ok"
             response[key] = data
@@ -60,7 +66,7 @@ function getResponse(key){
         else{
             response.status = "error"
         }
-        
+
         res.jsonp(response)
     }
 }
@@ -68,7 +74,7 @@ function getResponse(key){
 /* Heroku idles any web process with inactivity for 1 hour
 Ping is called regularly by a remote worker to keep the web process alive */
 function handlePing(req, res){
-    var response = { ping: new Date } 
+    var response = { ping: new Date }
     res.jsonp(response)
 }
 
@@ -99,7 +105,7 @@ function handleInvalidEndpoint(req, res){
         "banks": cache['banks'],
         "currencies": cache['currencies']
     }
-    
+
 })()
 
 app.listen(port, function() {
